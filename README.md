@@ -13,7 +13,16 @@ chawkes@ncsu.edu
 
 ## File list  
 ### Data  
-
+ ASV_counts_lulu_b.csv.zip
+ ASV_counts_lulu_f.csv.zip
+ ASV_taxonomy_lulu_b.csv
+ ASV_taxonomy_lulu_f.csv
+ ASVs_noCtls_b.fa.zip
+ ASVs_noCtls_f.fa
+ ISDs_b.fasta
+ ISDs_f.fasta
+ MATRIX22_16S_samdf.csv
+ MATRIX22_ITS_samdf.csv
 
 ### Scripts and analyses  
  
@@ -21,10 +30,20 @@ chawkes@ncsu.edu
 ## File descriptions  
 ### Data  
 
+ ASV_counts_lulu_b.csv.zip - ASV table for bacterial communities after curation using mumu
  
+ ASV_counts_lulu_f.csv.zip - ASV table for fungal communities after curation using mumu
+ 
+ ASV_taxonomy_lulu_b.csv + ASV_taxonomy_lulu_f.csv - Table of taxonomic assignments for each ASV
+ 
+ ASVs_noCtls_b.fa.zip + ASVs_noCtls_f.fa - Sequence for each ASV used for taxonomic assignments
+ 
+ ISDs_b.fasta + ISDs_f.fasta - Sequences of synthetic internal standards used for normalization
+ 
+ MATRIX22_16S_samdf.csv + MATRIX22_ITS_samdf.csv - Sample data tables containing information for each sample including plot, host, soil, and climate properties.  
 
 ## Note  
-Data files must be placed in your working directory for the analyses, or paths must be specified.  
+Data files must be placed in your working directory for the analyses, or paths must be specified. Zipped data must be unzipped.
 
 ## Publication information  
 TBD 
