@@ -30,7 +30,9 @@ chawkes@ncsu.edu
  
 
 ### Scripts and analyses  
- 
+ MATRIX_dataprep.Rmd - R markdown script to prepare data for analysis. Takes files after curation using mumu
+ MATRIX_alphadiv.Rmd - R markdown script for analysis of community richness after data prep
+ MATRIX_sourcesink.Rmd - R markdown script for analysis using SourceTracker. Requires only sourcesink zip files and downloading sourcetracker.r unless you want to do everything yourself.
 
 ## File descriptions  
 ### Data  
