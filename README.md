@@ -23,6 +23,8 @@ chawkes@ncsu.edu
  ISDs_f.fasta
  MATRIX22_16S_samdf.csv
  MATRIX22_ITS_samdf.csv
+ sourcesink_b.zip
+ sourcesink_f.zip
 
 ### Scripts and analyses  
  
@@ -41,6 +43,8 @@ chawkes@ncsu.edu
  ISDs_b.fasta + ISDs_f.fasta - Sequences of synthetic internal standards used for normalization
  
  MATRIX22_16S_samdf.csv + MATRIX22_ITS_samdf.csv - Sample data tables containing information for each sample including plot, host, soil, and climate properties.  
+
+ sourcesink_b.zip + sourcesink_f.zip - Bacterial and fungal ASV tables and metadata formatted for SourceTracker analyses
 
 ## Note  
 Data files must be placed in your working directory for the analyses, or paths must be specified. Zipped data must be unzipped.
