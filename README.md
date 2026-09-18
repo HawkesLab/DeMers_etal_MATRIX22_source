@@ -15,16 +15,21 @@ chawkes@ncsu.edu
 ### Data  
  ASV_counts_lulu_b.csv.zip
  ASV_counts_lulu_f.csv.zip
+ ASV_counts_normalized_b.csv.zip
+ ASV_counts_normalized_f.csv.zip
  ASV_taxonomy_lulu_b.csv
  ASV_taxonomy_lulu_f.csv
  ASVs_noCtls_b.fa.zip
  ASVs_noCtls_f.fa
  ISDs_b.fasta
  ISDs_f.fasta
+ isd_match_list_b.txt
+ isd_match_list_f.txt
  MATRIX22_16S_samdf.csv
  MATRIX22_ITS_samdf.csv
  sourcesink_b.zip
  sourcesink_f.zip
+ 
 
 ### Scripts and analyses  
  
@@ -32,15 +37,17 @@ chawkes@ncsu.edu
 ## File descriptions  
 ### Data  
 
- ASV_counts_lulu_b.csv.zip - ASV table for bacterial communities after curation using mumu
- 
- ASV_counts_lulu_f.csv.zip - ASV table for fungal communities after curation using mumu
+ ASV_counts_lulu_b.csv.zip + ASV_counts_lulu_f.csv.zip - ASV tables for bacterial and fungal communities after curation using mumu
+
+ ASV_counts_normalized_b.csv.zip + ASV_counts_normalized_f.csv.zip - ASV tables normalized based on synthetic internal standards
  
  ASV_taxonomy_lulu_b.csv + ASV_taxonomy_lulu_f.csv - Table of taxonomic assignments for each ASV
  
  ASVs_noCtls_b.fa.zip + ASVs_noCtls_f.fa - Sequence for each ASV used for taxonomic assignments
  
  ISDs_b.fasta + ISDs_f.fasta - Sequences of synthetic internal standards used for normalization
+
+ isd_match_list_b.txt + isd_match_list_f.txt - List of synthetic internal standard taxa for removal
  
  MATRIX22_16S_samdf.csv + MATRIX22_ITS_samdf.csv - Sample data tables containing information for each sample including plot, host, soil, and climate properties.  
 
