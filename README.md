@@ -15,8 +15,6 @@ chawkes@ncsu.edu
 ### Data  
  ASV_counts_lulu_b.csv.zip
  ASV_counts_lulu_f.csv.zip
- ASV_counts_normalized_b.csv.zip
- ASV_counts_normalized_f.csv.zip
  ASV_taxonomy_lulu_b.csv
  ASV_taxonomy_lulu_f.csv
  ASVs_noCtls_b.fa.zip
@@ -38,8 +36,6 @@ chawkes@ncsu.edu
 ### Data  
 
  ASV_counts_lulu_b.csv.zip + ASV_counts_lulu_f.csv.zip - ASV tables for bacterial and fungal communities after curation using mumu
-
- ASV_counts_normalized_b.csv.zip + ASV_counts_normalized_f.csv.zip - ASV tables normalized based on synthetic internal standards
  
  ASV_taxonomy_lulu_b.csv + ASV_taxonomy_lulu_f.csv - Table of taxonomic assignments for each ASV
  
