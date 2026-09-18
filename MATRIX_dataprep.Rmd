@@ -1,0 +1,443 @@
+---
+title: "MATRIX_dataprep"
+author: "Mara DeMers"
+date: "2026-09-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+2022 data - wheat and non-wheat ITS and 16S. ISDs removed (ASVs 1-3) but counts used to normalize count data. dada2 and lulu curation already complete. Metadata includes field collection data and relevant climate data.
+
+Used BLAST to ISD sequences to mark for removal.  These have k__ISD in Kingdom field of taxonomy file (fungi). Use match_list_ISD.txt to remove from bacteria (preferred method).  Filter Mitochondria (Family) and Chloroplast (Order) taxa using phyloseq functions.
+
+```{r, echo=FALSE}
+library(ggplot2)
+library(phyloseq)
+library(vegan)
+library(decontam)
+library(microbiome)
+library(DESeq2)
+library(psadd)
+```
+
+Load files
+
+```{r}
+#load lulu output files
+count_its <- read.csv("data/ASV_counts_lulu_f.csv", header = TRUE, row.names = 1, check.names = FALSE)
+count_16s <- read.csv("data/ASV_counts_lulu_b.csv", header = TRUE, row.names = 1, check.names = FALSE)
+tax_its <- as.matrix(read.csv("data/ASV_taxonomy_lulu_f.csv", header = TRUE, row.names = 1,
+                              check.names = FALSE))
+tax_16s <- as.matrix(read.csv("data/ASV_taxonomy_lulu_b.csv", header = TRUE, row.names = 1,
+                              check.names = FALSE))
+#load metadata
+samdf_its <- read.csv("data/MATRIX22_ITS_samdf.csv", header = TRUE)
+samdf_16s <- read.csv("data/MATRIX22_16S_samdf.csv", header = TRUE)
+colnames(samdf_its)[1] <- "SampleID"
+rownames(samdf_its) <- samdf_its$SampleID
+colnames(samdf_16s)[1] <- "SampleID"
+rownames(samdf_16s) <- samdf_16s$SampleID
+
+samdf_its$LibraryGroup <- as.factor(samdf_its$LibraryGroup)
+samdf_its$SeqGroup <- as.factor(samdf_its$SeqGroup)
+
+samdf_16s$LibraryGroup <- as.factor(samdf_16s$LibraryGroup)
+samdf_16s$SeqGroup <- as.factor(samdf_16s$SeqGroup)
+
+#Define ps objects
+ps_its <- phyloseq(otu_table(count_its, taxa_are_rows=T),
+               sample_data(samdf_its), tax_table(tax_its))
+ps_16s <- phyloseq(otu_table(count_16s, taxa_are_rows=T),
+               sample_data(samdf_16s), tax_table(tax_16s))
+```
+
+Find index hopping threshold - largest ISD read count from PCR2 blank negative control samples
+
+Other negative controls had ISDs added and so their presence does not indicate index hopping
+
+```{r, echo=FALSE, eval = FALSE}
+controlF <- phyloseq::subset_samples(ps_its, Collection_criteria == "PCR2_blank")
+
+controlB <- phyloseq::subset_samples(ps_16s, Collection_criteria == "PCR2_blank")
+
+ISDmatchF <- read.table("data/isd_match_list_f.txt") #BLAST hits to ISD sequences
+ISDsF <- ISDmatchF$V1
+allTaxaF = taxa_names(controlF)
+ISDTaxaF = allTaxaF[(allTaxaF %in% ISDsF)]
+controlF = prune_taxa(ISDTaxaF, controlF)
+max(controlF@otu_table) #845 highest read count of ISD in PCR2 blank
+
+ISDmatchB <- read.table("data/isd_match_list_b.txt") #BLAST hits to ISD sequences
+ISDsB <- ISDmatchB$V1
+allTaxaB = taxa_names(controlB)
+ISDTaxaB = allTaxaB[(allTaxaB %in% ISDsB)]
+controlB = prune_taxa(ISDTaxaB, controlB)
+max(controlB@otu_table) #1245 highest read count of ISD in PCR2 blank
+```
+
+Function for changing NAs to the lowest assigned rank so the ASVs don't get killed by subset_taxa
+Did not write this, got it from github under phyloseq issues
+
+```{r, echo = FALSE, eval = FALSE}
+tax.clean <- data.frame(row.names = row.names(tax_16s),
+Kingdom = str_replace(tax_16s[,1], "D_0__",""),
+Phylum = str_replace(tax_16s[,2], "D_1__",""),
+Class = str_replace(tax_16s[,3], "D_2__",""),
+Order = str_replace(tax_16s[,4], "D_3__",""),
+Family = str_replace(tax_16s[,5], "D_4__",""),
+Genus = str_replace(tax_16s[,6], "D_5__",""),
+stringsAsFactors = FALSE)
+tax.clean[is.na(tax.clean)] <- ""
+
+for (i in 1:6){ tax.clean[,i] <- as.character(tax.clean[,i])}
+####### Fill holes in the tax table
+tax.clean[is.na(tax.clean)] <- ""
+for (i in 1:nrow(tax.clean)){
+  if (tax.clean[i,2] == ""){
+kingdom <- paste("Kingdom_", tax.clean[i,1], sep = "")
+tax.clean[i, 2:6] <- kingdom
+} else if (tax.clean[i,3] == ""){
+phylum <- paste("Phylum_", tax.clean[i,2], sep = "")
+tax.clean[i, 3:6] <- phylum
+} else if (tax.clean[i,4] == ""){
+class <- paste("Class_", tax.clean[i,3], sep = "")
+tax.clean[i, 4:6] <- class
+} else if (tax.clean[i,5] == ""){
+order <- paste("Order_", tax.clean[i,4], sep = "")
+tax.clean[i, 5:6] <- order
+} else if (tax.clean[i,6] == ""){
+family <- paste("Family_", tax.clean[i,5], sep = "")
+tax.clean[i, 6:7] <- family
+}
+}
+tax_table(ps_16s) <- as.matrix(tax.clean)
+
+##ITS
+tax.clean <- data.frame(row.names = row.names(tax_its),
+Kingdom = str_replace(tax_its[,1], "D_0__",""),
+Phylum = str_replace(tax_its[,2], "D_1__",""),
+Class = str_replace(tax_its[,3], "D_2__",""),
+Order = str_replace(tax_its[,4], "D_3__",""),
+Family = str_replace(tax_its[,5], "D_4__",""),
+Genus = str_replace(tax_its[,6], "D_5__",""),
+Species = str_replace(tax_its[,7], "D_6__",""),
+stringsAsFactors = FALSE)
+tax.clean[is.na(tax.clean)] <- ""
+
+for (i in 1:7){ tax.clean[,i] <- as.character(tax.clean[,i])}
+####### Fill holes in the tax table
+tax.clean[is.na(tax.clean)] <- ""
+for (i in 1:nrow(tax.clean)){
+  if (tax.clean[i,2] == ""){
+kingdom <- paste("Kingdom_", tax.clean[i,1], sep = "")
+tax.clean[i, 2:7] <- kingdom
+} else if (tax.clean[i,3] == ""){
+phylum <- paste("Phylum_", tax.clean[i,2], sep = "")
+tax.clean[i, 3:7] <- phylum
+} else if (tax.clean[i,4] == ""){
+class <- paste("Class_", tax.clean[i,3], sep = "")
+tax.clean[i, 4:7] <- class
+} else if (tax.clean[i,5] == ""){
+order <- paste("Order_", tax.clean[i,4], sep = "")
+tax.clean[i, 5:7] <- order
+} else if (tax.clean[i,6] == ""){
+family <- paste("Family_", tax.clean[i,5], sep = "")
+tax.clean[i, 6:7] <- family
+} else if (tax.clean[i,7] == ""){
+tax.clean$Species[i] <- paste("Genus",tax.clean$Genus[i], sep = "_")
+}
+}
+tax_table(ps_its) <- as.matrix(tax.clean)
+```
+
+Remove ISDs, non-target taxa
+
+```{r, echo=FALSE, eval = FALSE}
+#Remove non-fungi, non-bacteria, ISDs, NAs
+allTaxaF = taxa_names(ps_its)
+bioTaxaF = allTaxaF[!(allTaxaF %in% ISDsF)]
+ps_its = prune_taxa(bioTaxaF, ps_its)
+
+allTaxaB = taxa_names(ps_16s)
+bioTaxaB = allTaxaB[!(allTaxaB %in% ISDsB)]
+ps_16s = prune_taxa(bioTaxaB, ps_16s)
+
+phyloseq::get_taxa_unique(ps_its, taxonomic.rank = "Kingdom")
+ps_its <- phyloseq::subset_taxa(ps_its, Kingdom == "k__Fungi") 
+ps_its <- phyloseq::prune_taxa(phyloseq::taxa_sums(ps_its) > 0, ps_its) #remove all-zeros
+phyloseq::get_taxa_unique(ps_16s, taxonomic.rank = "Kingdom")
+ps_16s <- phyloseq::subset_taxa(ps_16s, Kingdom == "Bacteria")
+ps_16s <- phyloseq::subset_taxa(ps_16s, Order != "Chloroplast")
+ps_16s <- phyloseq::subset_taxa(ps_16s, Family != "Mitochondria")
+ps_16s <- phyloseq::subset_taxa(ps_16s, !Genus == "Buchnera")
+ps_16s <- phyloseq::subset_taxa(ps_16s, !Genus == "Wolbachia")
+ps_16s <- phyloseq::prune_taxa(phyloseq::taxa_sums(ps_16s) > 0, ps_16s) #remove all-zeros
+```
+
+Decontam - Wanted a more rigorous decontamination, so I am using the "either" method which calls contaminants identified by either frequency or prevalence methods.  No mercy just toss them out.
+
+Decontam is run per sequencing group then samples are merged.
+
+```{r, eval = FALSE}
+#decontam frequency method requires positive numeric quantitation values
+#Convert negative library concentration values to positive
+vecf = sample_data(ps_its)$LibraryConc_ng.ul
+vecf[vecf < 0.01] <- 0.01
+sample_data(ps_its)$LibraryConc_ng.ul = vecf
+
+vecb = sample_data(ps_16s)$LibraryConc_ng.ul
+vecb[vecb < 0.01] <- 0.01
+sample_data(ps_16s)$LibraryConc_ng.ul = vecb
+
+#decontam step default thresholds
+sample_data(ps_its)$is.neg <- sample_data(ps_its)$Source == "neg_ctl"
+ps_its1 <- phyloseq::subset_samples(ps_its, SeqGroup == "1")
+ps_its2 <- phyloseq::subset_samples(ps_its, SeqGroup == "2")
+ps_its3 <- phyloseq::subset_samples(ps_its, SeqGroup == "3")
+ps_its4 <- phyloseq::subset_samples(ps_its, SeqGroup == "4")
+ps_its5 <- phyloseq::subset_samples(ps_its, SeqGroup == "5")
+ps_its6 <- phyloseq::subset_samples(ps_its, SeqGroup == "6")
+ps_its7 <- phyloseq::subset_samples(ps_its, SeqGroup == "7")
+ps_its8 <- phyloseq::subset_samples(ps_its, SeqGroup == "8")
+contamdf.its1 <- isContaminant(ps_its1, method="either", conc="LibraryConc_ng.ul", neg = "is.neg")
+contamdf.its2 <- isContaminant(ps_its2, method="either", conc="LibraryConc_ng.ul", neg = "is.neg")
+contamdf.its3 <- isContaminant(ps_its3, method="either", conc="LibraryConc_ng.ul", neg = "is.neg")
+contamdf.its4 <- isContaminant(ps_its4, method="either", conc="LibraryConc_ng.ul", neg = "is.neg")
+contamdf.its5 <- isContaminant(ps_its5, method="either", conc="LibraryConc_ng.ul", neg = "is.neg")
+contamdf.its6 <- isContaminant(ps_its6, method="either", conc="LibraryConc_ng.ul", neg = "is.neg")
+contamdf.its7 <- isContaminant(ps_its7, method="either", conc="LibraryConc_ng.ul", neg = "is.neg")
+contamdf.its8 <- isContaminant(ps_its8, method="either", conc="LibraryConc_ng.ul", neg = "is.neg")
+
+sample_data(ps_16s)$is.neg <- sample_data(ps_16s)$Source == "neg_ctl"
+ps_16s1 <- phyloseq::subset_samples(ps_16s, SeqGroup == "1")
+ps_16s2 <- phyloseq::subset_samples(ps_16s, SeqGroup == "2")
+ps_16s3 <- phyloseq::subset_samples(ps_16s, SeqGroup == "3")
+ps_16s4 <- phyloseq::subset_samples(ps_16s, SeqGroup == "4")
+ps_16s5 <- phyloseq::subset_samples(ps_16s, SeqGroup == "5")
+ps_16s6 <- phyloseq::subset_samples(ps_16s, SeqGroup == "6")
+ps_16s7 <- phyloseq::subset_samples(ps_16s, SeqGroup == "7")
+ps_16s8 <- phyloseq::subset_samples(ps_16s, SeqGroup == "8")
+contamdf.16s1 <- isContaminant(ps_16s1, method="either", conc="LibraryConc_ng.ul", neg = "is.neg")
+contamdf.16s2 <- isContaminant(ps_16s2, method="either", conc="LibraryConc_ng.ul", neg = "is.neg")
+contamdf.16s3 <- isContaminant(ps_16s3, method="either", conc="LibraryConc_ng.ul", neg = "is.neg")
+contamdf.16s4 <- isContaminant(ps_16s4, method="either", conc="LibraryConc_ng.ul", neg = "is.neg")
+contamdf.16s5 <- isContaminant(ps_16s5, method="either", conc="LibraryConc_ng.ul", neg = "is.neg")
+contamdf.16s6 <- isContaminant(ps_16s6, method="either", conc="LibraryConc_ng.ul", neg = "is.neg")
+contamdf.16s7 <- isContaminant(ps_16s7, method="either", conc="LibraryConc_ng.ul", neg = "is.neg")
+contamdf.16s8 <- isContaminant(ps_16s8, method="either", conc="LibraryConc_ng.ul", neg = "is.neg")
+
+table(contamdf.its1$contaminant)  #8 TRUE
+table(contamdf.its2$contaminant)  #17 TRUE
+table(contamdf.its3$contaminant)  #15 TRUE
+table(contamdf.its4$contaminant)  #34 TRUE
+table(contamdf.its5$contaminant)  #5 TRUE
+table(contamdf.its6$contaminant)  #12 TRUE
+table(contamdf.its7$contaminant)  #33 TRUE
+table(contamdf.its8$contaminant)  #12 TRUE
+table(contamdf.16s1$contaminant)  #92 TRUE
+table(contamdf.16s2$contaminant)  #156 TRUE
+table(contamdf.16s3$contaminant)  #171 TRUE
+table(contamdf.16s4$contaminant)  #80 TRUE
+table(contamdf.16s5$contaminant)  #81 TRUE
+table(contamdf.16s6$contaminant)  #76 TRUE
+table(contamdf.16s7$contaminant)  #50 TRUE
+table(contamdf.16s8$contaminant)  #16 TRUE
+
+#Remove contaminants from phyloseq object
+ps_nc_its1 <- prune_taxa(!contamdf.its1$contaminant, ps_its1)
+ps_nc_its2 <- prune_taxa(!contamdf.its2$contaminant, ps_its2)
+ps_nc_its3 <- prune_taxa(!contamdf.its3$contaminant, ps_its3)
+ps_nc_its4 <- prune_taxa(!contamdf.its4$contaminant, ps_its4)
+ps_nc_its5 <- prune_taxa(!contamdf.its5$contaminant, ps_its5)
+ps_nc_its6 <- prune_taxa(!contamdf.its6$contaminant, ps_its6)
+ps_nc_its7 <- prune_taxa(!contamdf.its7$contaminant, ps_its7)
+ps_nc_its8 <- prune_taxa(!contamdf.its8$contaminant, ps_its8)
+ps_nc_16s1 <- prune_taxa(!contamdf.16s1$contaminant, ps_16s1)
+ps_nc_16s2 <- prune_taxa(!contamdf.16s2$contaminant, ps_16s2)
+ps_nc_16s3 <- prune_taxa(!contamdf.16s3$contaminant, ps_16s3)
+ps_nc_16s4 <- prune_taxa(!contamdf.16s4$contaminant, ps_16s4)
+ps_nc_16s5 <- prune_taxa(!contamdf.16s5$contaminant, ps_16s5)
+ps_nc_16s6 <- prune_taxa(!contamdf.16s6$contaminant, ps_16s6)
+ps_nc_16s7 <- prune_taxa(!contamdf.16s7$contaminant, ps_16s7)
+ps_nc_16s8 <- prune_taxa(!contamdf.16s8$contaminant, ps_16s8)
+ps_nc_its <- phyloseq::merge_phyloseq(ps_nc_its1, ps_nc_its2, ps_nc_its3, ps_nc_its4, ps_nc_its5,
+                                       ps_nc_its6, ps_nc_its7, ps_nc_its8)
+ps_nc_16s <- phyloseq::merge_phyloseq(ps_nc_16s1, ps_nc_16s2, ps_nc_16s3, ps_nc_16s4, ps_nc_16s5,
+                                       ps_nc_16s6, ps_nc_16s7, ps_nc_16s8)
+ps_nc_its <- prune_samples(sample_data(ps_nc_its)$Source == "sample", ps_nc_its)
+ps_nc_16s <- prune_samples(sample_data(ps_nc_16s)$Source == "sample", ps_nc_16s)
+
+ps_nc_its <- phyloseq::prune_taxa(phyloseq::taxa_sums(ps_nc_its) > 0, ps_nc_its) #remove all-zeros
+ps_nc_16s <- phyloseq::prune_taxa(phyloseq::taxa_sums(ps_nc_16s) > 0, ps_nc_16s)
+#save(ps_nc_its, ps_nc_16s, file = "decontam.Rdata")
+
+ASV_ITS <- phyloseq::otu_table(ps_nc_its)
+#write.csv(ASV_ITS, "data/ASV_counts_decontam_f.csv")
+ASV_16S <- phyloseq::otu_table(ps_nc_16s)
+#write.csv(ASV_16S, "data/ASV_counts_decontam_b.csv")
+TAX_ITS <- phyloseq::tax_table(ps_nc_its)
+#write.csv(TAX_ITS, "data/ASV_taxonomy_decontam_f.csv")
+TAX_16S <- phyloseq::tax_table(ps_nc_16s)
+#write.csv(TAX_16S, "data/ASV_taxonomy_decontam_b.csv")
+```
+
+Remove observations below index-hopping threshold - determined by reads in negative control samples that should have nothing in them (vs. other negative controls with stuff in them) (845 fungi + 1245 bacteria)
+
+```{r, echo=FALSE, eval = FALSE}
+ps_nc_its@otu_table[ps_nc_its@otu_table < 845] <- 0
+ps_nc_its <- phyloseq::prune_taxa(phyloseq::taxa_sums(ps_nc_its) > 0, ps_nc_its) #remove all-zeros
+ps_nc_its <- phyloseq::prune_samples(phyloseq::sample_sums(ps_nc_its) > 0, ps_nc_its)
+ps_nc_its # now only 3191 taxa, 2648 samples (from 2682 samples)
+
+ps_nc_16s@otu_table[ps_nc_16s@otu_table < 1245] <- 0
+ps_nc_16s <- phyloseq::prune_taxa(phyloseq::taxa_sums(ps_nc_16s) > 0, ps_nc_16s) #remove all-zeros
+ps_nc_16s <- phyloseq::prune_samples(phyloseq::sample_sums(ps_nc_16s) > 0, ps_nc_16s)
+ps_nc_16s # now only 7769 taxa, 2518 samples (from 2681 samples)
+
+#save(ps_nc_its, ps_nc_16s, file = "indexhoppingremoved.RData")
+
+ASV_ITS <- phyloseq::otu_table(ps_nc_its)
+#write.csv(ASV_ITS, "data/ASV_counts_IHThresh_f.csv")
+ASV_16S <- phyloseq::otu_table(ps_nc_16s)
+#write.csv(ASV_16S, "datab/ASV_counts_IHThresh_b.csv")
+TAX_ITS <- phyloseq::tax_table(ps_nc_its)
+#write.csv(TAX_ITS, "data/ASV_taxonomy_IHThresh_f.csv")
+TAX_16S <- phyloseq::tax_table(ps_nc_16s)
+#write.csv(TAX_16S, "datab/ASV_taxonomy_IHThresh_b.csv")
+```
+
+Normalize counts from ISD data (I used to do this in Excel but then I got fancy)
+
+```{r, echo=FALSE, eval = FALSE}
+ps_its <- prune_samples(sample_data(ps_its)$Source == "sample", ps_its)
+ps_16s <- prune_samples(sample_data(ps_16s)$Source == "sample", ps_16s)
+
+#we already got rid of ISDs so go get them back
+normISDF <- phyloseq::prune_taxa(c("ASV_00001", "ASV_00003", "ASV_00017"), ps_its)
+normISDF <- phyloseq::prune_samples(phyloseq::sample_names(ps_nc_its), normISDF)
+normISDF
+normISDB <- phyloseq::prune_taxa(c("ASV_000001", "ASV_000002", "ASV_000003"), ps_16s)
+normISDB <- phyloseq::prune_samples(phyloseq::sample_names(ps_nc_16s), normISDB)
+normISDB
+
+samplesumF <- phyloseq::sample_sums(normISDF)
+samplesumB <- phyloseq::sample_sums(normISDB)
+
+#normalizing
+normbyF <- samplesumF/3
+normbyF <- as.vector(normbyF)
+asv_its <- t(ps2m_otu(ps_nc_its))
+
+normbyB <- samplesumB/3
+normbyB <- as.vector(normbyB)
+asv_16s <- t(ps2m_otu(ps_nc_16s))
+
+#Define ISD copies per reaction - ITS
+#ISD_copies_per_rxn = 585
+#template_ug_per_rxn = 2.5
+ISD_copies_per_ug_template = 585/2.5
+#abs = mat / vec[col(mat)] * ISD_copies_per_ug_template
+asv_its_norm <- sweep(asv_its, 2, normbyF, "/")
+asv_its_norm <- asv_its_norm * ISD_copies_per_ug_template
+
+#Define ISD copies per reaction - 16S
+#ISD_copies_per_rxn = 18
+#template_ug_per_rxn = 6
+ISD_copies_per_ug_template = 18/6
+#abs = mat / vec[col(mat)] * ISD_copies_per_ug_template
+asv_16s_norm <- sweep(asv_16s, 2, normbyB, "/")
+asv_16s_norm <- asv_16s_norm * ISD_copies_per_ug_template
+
+ps_its_n <- phyloseq(otu_table(asv_its_norm, taxa_are_rows=T),
+                     sample_data(samdf_its), tax_table(tax_its))
+ps_16s_n <- phyloseq(otu_table(asv_16s_norm, taxa_are_rows=T),
+                     sample_data(samdf_16s), tax_table(tax_16s))
+
+ps_its_n <- phyloseq::prune_samples(phyloseq::sample_sums(ps_its_n) > 0, ps_its_n)
+ps_its_n
+
+ps_16s_n <- phyloseq::prune_samples(phyloseq::sample_sums(ps_16s_n) > 0, ps_16s_n)
+ps_16s_n
+
+#save(ps_its_n, ps_16s_n, file = "normalized.RData")
+
+ASV_ITS_N <- phyloseq::otu_table(ps_its_n)
+write.csv(ASV_ITS_N, "data/ASV_counts_normalized_f.csv")
+ASV_16S_N <- phyloseq::otu_table(ps_16s_n)
+write.csv(ASV_16S_N, "data/ASV_counts_normalized_b.csv")
+TAX_ITS_N <- phyloseq::tax_table(ps_its_n)
+write.csv(TAX_ITS_N, "data/ASV_taxonomy_normalized_f.csv")
+TAX_16S_N <- phyloseq::tax_table(ps_16s_n)
+write.csv(TAX_16S_N, "data/ASV_taxonomy_normalized_b.csv")
+```
+
+Transforming normalized abundances - CLR making a sunburst pattern isn't a good thing!  If not transforming is best, just do that.
+
+OH NO this takes so long with large data sets.  Do this once and save it and never do it again.
+
+```{r, echo = FALSE, eval = FALSE}
+#Trying VST transform then comparing to raw counts and normalized counts (mean-variance)
+ps_ds_its <- phyloseq::phyloseq_to_deseq2(ps_its_n, ~Month+Source_plant+SeqGroup)
+gm_mean = function(x, na.rm=TRUE){ exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))}
+geoMeans = apply(counts(ps_ds_its), 1, gm_mean)
+ps_ds_its = estimateSizeFactors(ps_ds_its, type="ratio", geoMeans = geoMeans)
+#ps_ds_its = DESeq2::estimateSizeFactors(ps_ds_its)
+ps_ds_its = DESeq2::estimateDispersions(ps_ds_its, fitType = "local")
+DESeq2::plotDispEsts(ps_ds_its)
+ps_vst_its <- ps_its_n
+vstF <- DESeq2::getVarianceStabilizedData(ps_ds_its)
+row.names(vstF) #make sure taxa are rows
+phyloseq::otu_table(ps_vst_its) <- phyloseq::otu_table(vstF, taxa_are_rows = TRUE)
+ps_vst_its
+
+ps_ds_16s <- phyloseq::phyloseq_to_deseq2(ps_16s_n, ~Month+Source_plant+SeqGroup)
+geoMeans = apply(counts(ps_ds_16s), 1, gm_mean)
+ps_ds_16s = estimateSizeFactors(ps_ds_16s, type="ratio", geoMeans = geoMeans)
+#ps_ds_16s = DESeq2::estimateSizeFactors(ps_ds_16s)
+ps_ds_16s = DESeq2::estimateDispersions(ps_ds_16s, fitType = "local")
+DESeq2::plotDispEsts(ps_ds_16s)
+ps_vst_16s <- ps_nc_16s
+vstB <- DESeq2::getVarianceStabilizedData(ps_ds_16s)
+row.names(vstB) #make sure taxa are rows
+phyloseq::otu_table(ps_vst_16s) <- phyloseq::otu_table(vstB, taxa_are_rows = TRUE)
+ps_vst_16s
+#for some reason deseq insists there are NAs but anyNA says there are none. nothing to be done
+
+#alternative - CLR transform
+ps_clr_its <- microbiome::transform(ps_its_n, transform = "clr")
+ps_clr_16s <- microbiome::transform(ps_16s_n, transform = "clr")
+
+p1 <- plot_mv(ps_nc_its, log=FALSE, title = "Raw - Fungi")
+p2 <- plot_mv(ps_its_n, log=FALSE, title = "Normalized - Fungi")
+p3 <- plot_mv(ps_vst_its, log=FALSE, title = "VST - Fungi")
+p4 <- plot_mv(ps_clr_its, log=FALSE, title = "CLR - Fungi")
+p5 <- plot_mv(ps_nc_16s, log=FALSE, title = "Raw - Bacteria")
+p6 <- plot_mv(ps_16s_n, log=FALSE, title = "Normalized - Bacteria")
+plot_mv(ps_vst_16s, log=FALSE, title = "VST - Bacteria")
+p7 <- plot_mv(ps_clr_16s, log=FALSE, title = "CLR - Bacteria")
+ggpubr::ggarrange(p1, p2, p3, p4,
+                  ncol = 2, nrow = 2, common.legend = TRUE)
+ggpubr::ggarrange(p5, p6, p7,
+                  ncol = 2, nrow = 2, common.legend = TRUE)
+
+#save(ps_vst_its, ps_clr_its, ps_vst_16s, ps_clr_16s, file = "transformednormalcounts.RData")
+
+#since VST isn't working for 16s and CLR looks okay for both I'll use that
+```
+
+Subset to only samples from March or April (early or late season sampling) - we've got a lot more samples than that but you don't need them if you're just copying what we did in the paper
+
+```{r, echo=FALSE}
+ps_nc_its <- phyloseq::subset_samples(ps_nc_its, Month %in% c("April", "March"))
+ps_clr_its <- phyloseq::subset_samples(ps_clr_its, Month %in% c("April", "March"))
+ps_its_n <- phyloseq::subset_samples(ps_its_n, Month %in% c("April", "March"))
+ps_nc_16s <- phyloseq::subset_samples(ps_nc_16s, Month %in% c("April", "March"))
+ps_clr_16s <- phyloseq::subset_samples(ps_clr_16s, Month %in% c("April", "March"))
+ps_16s_n <- phyloseq::subset_samples(ps_16s_n, Month %in% c("April", "March"))
+
+save(ps_nc_its, ps_clr_its, ps_its_n, ps_nc_16s, ps_clr_16s, ps_16s_n, file = "MarchAprilOnly.RData")
+```

@@ -1,0 +1,72 @@
+---
+title: "MATRIX_alphadiv"
+author: "Mara DeMers"
+date: "2026-09-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Continues from MATRIX_dataprep.Rmd
+
+Make yourself some richness graphs.
+
+```{r, echo=FALSE}
+load(file = "MarchAprilOnly.RData")
+library(ggplot2)
+library(phyloseq)
+library(RRPP)
+```
+
+Alpha diversity - use counts, not transformed
+
+```{r, echo=FALSE}
+#Richness
+a_f <- phyloseq::estimate_richness(ps_nc_its, split = TRUE, measures = "Observed")
+#it's big mad about missing low-abundance taxa but that's okay
+sample_data(ps_nc_its)$Alpha <- a_f$Observed
+
+sample_data(ps_nc_its)$Host_Month <- factor(sample_data(ps_nc_its)$Host_Month,
+                                            levels = c("nonwheat_March", "nonwheat_April",
+                                                       "wheat_March", "wheat_April"))
+
+ggplot(sample_data(ps_nc_its), aes(x = Host_Month, y = Alpha, fill = Site)) +
+  geom_boxplot() +
+  labs(y = "Fungal Richness", fill = "Site") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+#take a look at some predictors (CVH does this better elsewhere but why not?)
+r11 <- lm(sample_data(ps_nc_its)$Alpha ~ sample_data(ps_nc_its)$Wheat * sample_data(ps_nc_its)$Month)
+anova(r11)
+summary(r11)
+TukeyHSD(aov(sample_data(ps_nc_its)$Alpha ~ sample_data(ps_nc_its)$Wheat * sample_data(ps_nc_its)$Month))
+
+r1 <- RRPP::lm.rrpp(Alpha ~ Wheat * Month + Site:Plot,
+                    data = sample_data(ps_nc_its), SS.type = "III",
+                    print.progress = TRUE, seed = "random", iter = 1000)
+anova(r1, effect.type = "F", error = c("Residuals", "Residuals", "Residuals", "Residuals"))
+
+#same thing but for bacteria
+a_b <- phyloseq::estimate_richness(ps_nc_16s, split = TRUE, measures = "Observed")
+sample_data(ps_nc_16s)$Alpha <- a_b$Observed
+
+sample_data(ps_nc_16s)$Host_Month <- factor(sample_data(ps_nc_16s)$Host_Month,
+                                            levels = c("nonwheat_March", "nonwheat_April",
+                                                       "wheat_March", "wheat_April"))
+
+ggplot(sample_data(ps_nc_16s), aes(x = Host_Month, y = Alpha, fill = Site)) +
+  geom_boxplot() +
+  labs(y = "Bacterial Richness", fill = "Site") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+r2 <- lm(sample_data(ps_nc_16s)$Alpha ~ sample_data(ps_nc_16s)$Wheat * sample_data(ps_nc_16s)$Month)
+anova(r2)
+summary(r2)
+TukeyHSD(aov(sample_data(ps_nc_16s)$Alpha ~ sample_data(ps_nc_16s)$Wheat * sample_data(ps_nc_16s)$Month))
+
+#as I said CVH did this better elsewhere. my computer can't even attempt RRPP for 16S data
+```

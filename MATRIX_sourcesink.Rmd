@@ -1,0 +1,737 @@
+---
+title: "MATRIX_sourcesink"
+author: "Mara DeMers"
+date: "2026-09-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+From danknights sourcetracker example.r - download and place in working directory
+
+Source-sink analysis for fungal samples at early (March) and late (April) sampling time points.
+
+If it does not run as-is, reload OTU table between samples.
+
+```{r, echo=FALSE}
+# load SourceTracker package
+source('src/SourceTracker.r')
+
+# load OTU table - QIIME-format
+otus <- read.table('data/ASV_counts_ITS_wSoil.txt',sep='\t', header=T,row.names=1,check=F,skip=1,comment='')
+otus <- t(as.matrix(otus))
+
+# tune the alpha values using cross-validation (this is slow!)
+# tune.results <- tune.st(otus[train.ix,], envs[train.ix])
+# alpha1 <- tune.results$best.alpha1
+# alpha2 <- tune.results$best.alpha2
+# note: to skip tuning, run this instead:
+alpha1 <- alpha2 <- 0.001
+
+# load sample metadata
+metadata <- read.table('data/M22_ITS_sourcesink_LENMarch.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+
+# extract only those samples in common between the two tables
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+# double-check that the mapping file and otu table have overlapping samples
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+
+# extract the source environments and source/sink indices
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+
+# train SourceTracker object on training data
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+
+# Estimate source proportions in test data
+results.LenM <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.LenM, file = "st_LenM.RData")
+reg_props <- results.LenM$proportions
+write.csv(reg_props, file = "sources_LenM.csv")
+
+
+metadata <- read.table('data/M22_ITS_sourcesink_LENApril.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.LenA <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.LenA, file = "st_LenA.RData")
+reg_props <- results.LenA$proportions
+write.csv(reg_props, file = "sources_LenA.csv")
+
+metadata <- read.table('data/M22_ITS_sourcesink_PERMarch.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.PerM <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.PerM, file = "st_PerM.RData")
+
+metadata <- read.table('data/M22_ITS_sourcesink_PERApril.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.PerA <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.PerA, file = "st_PerA.RData")
+reg_props <- results.PerA$proportions
+write.csv(reg_props, file = "sources_PerA.csv")
+
+metadata <- read.table('data/M22_ITS_sourcesink_ROBMarch.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.RobM <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.RobM, file = "st_RobM.RData")
+reg_props <- results.RobM$proportions
+write.csv(reg_props, file = "sources_RobM.csv")
+
+metadata <- read.table('data/M22_ITS_sourcesink_ROBApril.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.RobA <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.RobA, file = "st_RobA.RData")
+reg_props <- results.RobA$proportions
+write.csv(reg_props, file = "sources_RobA.csv")
+
+metadata <- read.table('data/M22_ITS_sourcesink_ROWMarch.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.RowM <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.RowM, file = "st_RowM.RData")
+reg_props <- results.RowM$proportions
+write.csv(reg_props, file = "sources_RowM.csv")
+
+metadata <- read.table('data/M22_ITS_sourcesink_ROWApril.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.RowA <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.RowA, file = "st_RowA.RData")
+reg_props <- results.RowA$proportions
+write.csv(reg_props, file = "sources_RowA.csv")
+
+metadata <- read.table('data/M22_ITS_sourcesink_UNIMarch.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.UniM <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.UniM, file = "st_UniM.RData")
+reg_props <- results.UniM$proportions
+write.csv(reg_props, file = "sources_UniM.csv")
+
+metadata <- read.table('data/M22_ITS_sourcesink_UNIApril.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.UniA <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.UniA, file = "st_UniA.RData")
+
+metadata <- read.table('data/M22_ITS_sourcesink_WAKMarch.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.WakM <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.WakM, file = "st_WakM.RData")
+reg_props <- results.WakM$proportions
+write.csv(reg_props, file = "sources_WakM.csv")
+
+metadata <- read.table('data/M22_ITS_sourcesink_WAKApril.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.WakA <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.WakA, file = "st_WakA.RData")
+
+metadata <- read.table('data/M22_ITS_sourcesink_WASMarch.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.WasM <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.WasM, file = "st_WasM.RData")
+reg_props <- results.WasM$proportions
+write.csv(reg_props, file = "sources_WasM.csv")
+
+metadata <- read.table('data/M22_ITS_sourcesink_WASApril.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.WasA <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.WasA, file = "st_WasA.RData")
+```
+
+Graphing summarized source data - these files (sources_April_f.csv, sources_March_f.csv) were assembled by hand from proportions determined above, but you're welcome to do it differently if you know how.
+
+```{r, echo = FALSE}
+sources_April <- read.csv(file = "sources_April_f.csv", header = TRUE)
+sources_March <- read.csv(file = "sources_March_f.csv", header = TRUE)
+
+sources_April$Source <- factor(sources_April$Source, levels = c("Unknown", "Region_Nonwheat_April",
+                                                            "Region_Nonwheat_March",
+                                                            "Site_Nonwheat_April", "Site_Nonwheat_March",
+                                                            "Region_Wheat_March", "Site_Wheat_March"))
+
+ggplot(sources_April, aes(fill = Source, y = Proportions, x = Sink)) +
+  geom_bar(position = "fill", stat = "identity") +
+  scale_fill_manual(values=c("gray", "gold4", "gold", "coral4", "coral1", "cadetblue", "cyan1"),
+                    labels = c("Unknown", "Region Heading, Non-Wheat", "Region Tillering, Non-Wheat",
+                               "Site Heading, Non-Wheat", "Site Tillering, Non-Wheat",
+                               "Region Tillering, Wheat", "Site Tillering, Wheat")) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+sources_March$Source <- factor(sources_March$Source, levels = c("Unknown", "Region_Nonwheat_March",
+                                                                "Site_Nonwheat_March"))
+
+ggplot(sources_March, aes(fill = Source, y = Proportions, x = Sink)) +
+  geom_bar(position = "fill", stat = "identity") +
+  scale_fill_manual(values=c("gray", "gold", "coral1"),
+                    labels = c("Unknown", "Region Tillering, Non-Wheat",
+                               "Site Tillering, Non-Wheat")) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+```
+
+Repeating analysis with bacterial data
+
+This section should run fine without reloading anything, but if not, do as suggested above.
+
+```{r, echo = FALSE}
+# load OTU table - QIIME-format
+otus <- read.table('data/ASV_counts_16S_wSoil_ST.txt',sep='\t', header=T, row.names=1, check=F,
+                   skip=1,comment='')
+otus <- t(as.matrix(otus))
+
+# tune the alpha values using cross-validation (this is slow!)
+# tune.results <- tune.st(otus[train.ix,], envs[train.ix])
+# alpha1 <- tune.results$best.alpha1
+# alpha2 <- tune.results$best.alpha2
+# note: to skip tuning, run this instead:
+alpha1 <- alpha2 <- 0.001
+
+# load sample metadata
+metadata <- read.table('data/M22_16S_sourcesink_LENMarch.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+
+# extract only those samples in common between the two tables
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+# double-check that the mapping file and otu table have overlapping samples
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+
+# extract the source environments and source/sink indices
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+
+# train SourceTracker object on training data
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+
+# Estimate source proportions in test data
+results.LenM.b <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.LenM.b, file = "st_LenM.b.RData")
+reg_props <- results.LenM.b$proportions
+write.csv(reg_props, file = "sources_LenM.b.csv")
+
+
+source('src/SourceTracker.r')
+alpha1 <- alpha2 <- 0.001
+otus <- read.table('data/ASV_counts_16S_wSoil_ST.txt',sep='\t', header=T, row.names=1, check=F,
+                   skip=1,comment='')
+otus <- t(as.matrix(otus))
+metadata <- read.table('data/M22_16S_sourcesink_LENApril.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.LenA.b <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.LenA.b, file = "st_LenA.b.RData")
+reg_props <- results.LenA.b$proportions
+write.csv(reg_props, file = "sources_LenA.b.csv")
+rm(list=ls())
+
+source('src/SourceTracker.r')
+alpha1 <- alpha2 <- 0.001
+otus <- read.table('data/ASV_counts_16S_wSoil_ST.txt',sep='\t', header=T, row.names=1, check=F,
+                   skip=1,comment='')
+otus <- t(as.matrix(otus))
+metadata <- read.table('data/M22_16S_sourcesink_PERMarch.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.PerM.b <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.PerM.b, file = "st_PerM.b.RData")
+reg_props <- results.PerM.b$proportions
+write.csv(reg_props, file = "sources_PerM.b.csv")
+rm(list=ls())
+
+source('src/SourceTracker.r')
+alpha1 <- alpha2 <- 0.001
+otus <- read.table('data/ASV_counts_16S_wSoil_ST.txt',sep='\t', header=T, row.names=1, check=F,
+                   skip=1,comment='')
+otus <- t(as.matrix(otus))
+metadata <- read.table('data/M22_16S_sourcesink_PERApril.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.PerA.b <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.PerA.b, file = "st_PerA.b.RData")
+reg_props <- results.PerA.b$proportions
+write.csv(reg_props, file = "sources_PerA.b.csv")
+rm(list=ls())
+
+source('src/SourceTracker.r')
+alpha1 <- alpha2 <- 0.001
+otus <- read.table('data/ASV_counts_16S_wSoil_ST.txt',sep='\t', header=T, row.names=1, check=F,
+                   skip=1,comment='')
+otus <- t(as.matrix(otus))
+metadata <- read.table('data/M22_16S_sourcesink_ROBMarch.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.RobM.b <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.RobM.b, file = "st_RobM.b.RData")
+reg_props <- results.RobM.b$proportions
+write.csv(reg_props, file = "sources_RobM.b.csv")
+rm(list=ls())
+
+source('src/SourceTracker.r')
+alpha1 <- alpha2 <- 0.001
+otus <- read.table('data/ASV_counts_16S_wSoil_ST.txt',sep='\t', header=T, row.names=1, check=F,
+                   skip=1,comment='')
+otus <- t(as.matrix(otus))
+metadata <- read.table('data/M22_16S_sourcesink_ROBApril.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.RobA.b <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.RobA.b, file = "st_RobA.b.RData")
+reg_props <- results.RobA.b$proportions
+write.csv(reg_props, file = "sources_RobA.b.csv")
+rm(list=ls())
+
+source('src/SourceTracker.r')
+alpha1 <- alpha2 <- 0.001
+otus <- read.table('data/ASV_counts_16S_wSoil_ST.txt',sep='\t', header=T, row.names=1, check=F,
+                   skip=1,comment='')
+otus <- t(as.matrix(otus))
+metadata <- read.table('data/M22_16S_sourcesink_ROWMarch.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.RowM.b <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.RowM.b, file = "st_RowM.b.RData")
+reg_props <- results.RowM.b$proportions
+write.csv(reg_props, file = "sources_RowM.b.csv")
+rm(list=ls())
+
+source('src/SourceTracker.r')
+alpha1 <- alpha2 <- 0.001
+otus <- read.table('data/ASV_counts_16S_wSoil_ST.txt',sep='\t', header=T, row.names=1, check=F,
+                   skip=1,comment='')
+otus <- t(as.matrix(otus))
+metadata <- read.table('data/M22_16S_sourcesink_ROWApril.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.RowA.b <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.RowA.b, file = "st_RowA.b.RData")
+reg_props <- results.RowA.b$proportions
+write.csv(reg_props, file = "sources_RowA.b.csv")
+rm(list=ls())
+
+source('src/SourceTracker.r')
+alpha1 <- alpha2 <- 0.001
+otus <- read.table('data/ASV_counts_16S_wSoil_ST.txt',sep='\t', header=T, row.names=1, check=F,
+                   skip=1,comment='')
+otus <- t(as.matrix(otus))
+metadata <- read.table('data/M22_16S_sourcesink_UNIMarch.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.UniM.b <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.UniM.b, file = "st_UniM.b.RData")
+reg_props <- results.UniM.b$proportions
+write.csv(reg_props, file = "sources_UniM.b.csv")
+rm(list=ls())
+
+source('src/SourceTracker.r')
+alpha1 <- alpha2 <- 0.001
+otus <- read.table('data/ASV_counts_16S_wSoil_ST.txt',sep='\t', header=T, row.names=1, check=F,
+                   skip=1,comment='')
+otus <- t(as.matrix(otus))
+metadata <- read.table('data/M22_16S_sourcesink_UNIApril.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.UniA.b <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.UniA.b, file = "st_UniA.b.RData")
+reg_props <- results.UniA.b$proportions
+write.csv(reg_props, file = "sources_UniA.b.csv")
+rm(list=ls())
+
+source('src/SourceTracker.r')
+alpha1 <- alpha2 <- 0.001
+otus <- read.table('data/ASV_counts_16S_wSoil_ST.txt',sep='\t', header=T, row.names=1, check=F,
+                   skip=1,comment='')
+otus <- t(as.matrix(otus))
+metadata <- read.table('data/M22_16S_sourcesink_WAKMarch.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.WakM.b <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.WakM.b, file = "st_WakM.b.RData")
+reg_props <- results.WakM.b$proportions
+write.csv(reg_props, file = "sources_WakM.b.csv")
+rm(list=ls())
+
+source('src/SourceTracker.r')
+alpha1 <- alpha2 <- 0.001
+otus <- read.table('data/ASV_counts_16S_wSoil_ST.txt',sep='\t', header=T, row.names=1, check=F,
+                   skip=1,comment='')
+otus <- t(as.matrix(otus))
+metadata <- read.table('data/M22_16S_sourcesink_WAKApril.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.WakA.b <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.WakA.b, file = "st_WakA.b.RData")
+reg_props <- results.WakA.b$proportions
+write.csv(reg_props, file = "sources_WakA.b.csv")
+rm(list=ls())
+
+source('src/SourceTracker.r')
+alpha1 <- alpha2 <- 0.001
+otus <- read.table('data/ASV_counts_16S_wSoil_ST.txt',sep='\t', header=T, row.names=1, check=F,
+                   skip=1,comment='')
+otus <- t(as.matrix(otus))
+metadata <- read.table('data/M22_16S_sourcesink_WASMarch.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.WasM.b <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.WasM.b, file = "st_WasM.b.RData")
+reg_props <- results.WasM.b$proportions
+write.csv(reg_props, file = "sources_WasM.b.csv")
+rm(list=ls())
+
+source('src/SourceTracker.r')
+alpha1 <- alpha2 <- 0.001
+otus <- read.table('data/ASV_counts_16S_wSoil_ST.txt',sep='\t', header=T, row.names=1, check=F,
+                   skip=1,comment='')
+otus <- t(as.matrix(otus))
+metadata <- read.table('data/M22_16S_sourcesink_WASApril.txt',sep='\t',h=T,row.names=1,check=F,comment='')
+common.sample.ids <- intersect(rownames(metadata), rownames(otus))
+otus <- otus[common.sample.ids,]
+metadata <- metadata[common.sample.ids,]
+if(length(common.sample.ids) <= 1) {
+    message <- paste(sprintf('Error: there are %d sample ids in common '),
+                    'between the metadata file and data table')
+    stop(message)
+}
+train.ix <- which(metadata$SourceSink=='source')
+test.ix <- which(metadata$SourceSink=='sink')
+envs <- metadata$Env
+if(is.element('Description',colnames(metadata))) desc <- metadata$Description
+st.reg <- sourcetracker(otus[train.ix,], envs[train.ix])
+results.WasA.b <- predict(st.reg,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+save(results.WasA.b, file = "st_WasA.b.RData")
+reg_props <- results.WasA.b$proportions
+write.csv(reg_props, file = "sources_WasA.b.csv")
+```
+
+Same graphs but for bacterial data. Again, collect all of the proportions output by hand or do it in a fancy way, as you prefer.
+
+```{r, echo = FALSE}
+sources_April <- read.csv(file = "sources_April_b.csv", header = TRUE)
+sources_March <- read.csv(file = "sources_March_b.csv", header = TRUE)
+
+sources_April$Source <- factor(sources_April$Source, levels = c("Unknown", "Region_Nonwheat_April",
+                                                            "Region_Nonwheat_March",
+                                                            "Site_Nonwheat_April", "Site_Nonwheat_March",
+                                                            "Region_Wheat_March", "Site_Wheat_March"))
+
+ggplot(sources_April, aes(fill = Source, y = Proportions, x = Sink)) +
+  geom_bar(position = "fill", stat = "identity") +
+  scale_fill_manual(values=c("gray", "gold4", "gold", "coral4", "coral1", "cadetblue", "cyan1"),
+                    labels = c("Unknown", "Region Heading, Non-Wheat", "Region Tillering, Non-Wheat",
+                               "Site Heading, Non-Wheat", "Site Tillering, Non-Wheat",
+                               "Region Tillering, Wheat", "Site Tillering, Wheat")) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+sources_March$Source <- factor(sources_March$Source, levels = c("Unknown", "Region_Nonwheat_March",
+                                                                "Site_Nonwheat_March"))
+
+ggplot(sources_March, aes(fill = Source, y = Proportions, x = Sink)) +
+  geom_bar(position = "fill", stat = "identity") +
+  scale_fill_manual(values=c("gray", "gold", "coral1"),
+                    labels = c("Unknown", "Region Tillering, Non-Wheat",
+                               "Site Tillering, Non-Wheat")) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+```
