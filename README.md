@@ -9,20 +9,20 @@ Data and analyses associated with this project.
 
 ## File list  
 ### Data  
- ASV_counts_lulu_b.csv.zip 
- ASV_counts_lulu_f.csv.zip 
- ASV_taxonomy_lulu_b.csv 
- ASV_taxonomy_lulu_f.csv 
- ASVs_noCtls_b.fa.zip 
- ASVs_noCtls_f.fa 
- ISDs_b.fasta 
- ISDs_f.fasta 
- isd_match_list_b.txt 
- isd_match_list_f.txt 
- MATRIX22_16S_samdf.csv 
- MATRIX22_ITS_samdf.csv 
- sourcesink_b.zip 
- sourcesink_f.zip 
+ ASV_counts_lulu_b.csv.zip  
+ ASV_counts_lulu_f.csv.zip  
+ ASV_taxonomy_lulu_b.csv  
+ ASV_taxonomy_lulu_f.csv  
+ ASVs_noCtls_b.fa.zip  
+ ASVs_noCtls_f.fa  
+ ISDs_b.fasta  
+ ISDs_f.fasta  
+ isd_match_list_b.txt  
+ isd_match_list_f.txt  
+ MATRIX22_16S_samdf.csv  
+ MATRIX22_ITS_samdf.csv  
+ sourcesink_b.zip  
+ sourcesink_f.zip  
  
 
 ### Scripts and analyses  
