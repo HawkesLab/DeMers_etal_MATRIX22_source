@@ -61,4 +61,4 @@ TBD
 This work was supported by funding from the Novo Nordisk Foundation (NNF19SA0059348) and by the Research Capacity Fund (HATCH; project award no. 7005451) from the U.S. Department of Agriculture’s National Institute of Food and Agriculture.
 
 ## Data availability    
-TBD
+Raw sequence data are in the NCBI SRA under BioProject PRJNA1255089
