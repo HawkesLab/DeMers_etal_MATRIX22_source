@@ -1,4 +1,5 @@
-## DeMers M, Willman M, Allen X, Heiniger R, Brown-Guedira G, Hawkes CV Phyllosphere flow: Microbial source-sink dynamics between wheat and field-adjacent plants
+## DeMers M, Willman M, Allen X, Heiniger R, Brown-Guedira G, Hawkes CV 
+## Data and Code from Phyllosphere flow: Microbial source-sink dynamics between wheat and field-adjacent plants 
 
 ## Supplementary Data and Analysis
 Data and analyses associated with this project.
