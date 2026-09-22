@@ -1,32 +1,27 @@
-## DeMers M, Willman M, Allen X, Heiniger R, Brown-Guedira G, Hawkes CV Phillosphere flow: Microbial source-sink dynamics between wheat and field-adjacent plants
+## DeMers M, Willman M, Allen X, Heiniger R, Brown-Guedira G, Hawkes CV Phyllosphere flow: Microbial source-sink dynamics between wheat and field-adjacent plants
 
 ## Supplementary Data and Analysis
 Data and analyses associated with this project.
-
-## Author Contact Information
-Christine Hawkes	
-112 Derieux Place, Thomas Hall, North Carolina State University, Raleigh, NC 27607
-chawkes@ncsu.edu
 
 ## Experiment description
 16S and ITS rRNA sequence analysis was used to characterize bacterial and fungal communities of Triticum aestivum leaves and leaves of plants near focal fields collected from 7 sites in North Carolina, USA. We analyzed community assembly based on host and sampling month, and source-sink dynamics between wheat and adjacent plants.
 
 ## File list  
 ### Data  
- ASV_counts_lulu_b.csv.zip
- ASV_counts_lulu_f.csv.zip
- ASV_taxonomy_lulu_b.csv
- ASV_taxonomy_lulu_f.csv
- ASVs_noCtls_b.fa.zip
- ASVs_noCtls_f.fa
- ISDs_b.fasta
- ISDs_f.fasta
- isd_match_list_b.txt
- isd_match_list_f.txt
- MATRIX22_16S_samdf.csv
- MATRIX22_ITS_samdf.csv
- sourcesink_b.zip
- sourcesink_f.zip
+ ASV_counts_lulu_b.csv.zip 
+ ASV_counts_lulu_f.csv.zip 
+ ASV_taxonomy_lulu_b.csv 
+ ASV_taxonomy_lulu_f.csv 
+ ASVs_noCtls_b.fa.zip 
+ ASVs_noCtls_f.fa 
+ ISDs_b.fasta 
+ ISDs_f.fasta 
+ isd_match_list_b.txt 
+ isd_match_list_f.txt 
+ MATRIX22_16S_samdf.csv 
+ MATRIX22_ITS_samdf.csv 
+ sourcesink_b.zip 
+ sourcesink_f.zip 
  
 
 ### Scripts and analyses  
